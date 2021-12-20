@@ -25,7 +25,7 @@ public class Producer {
     MessagePostProcessor correlationIdProcessor;
 
     @RequestMapping("/send")
-    String sendDirect(@RequestParam String message) throws Exception {
+    String sendDirect(@RequestParam String message) {
         logger.info("开始生产");
         CorrelationData data = new CorrelationData(UUID.randomUUID().toString());
         rabbitTemplate.convertAndSend(RabbitConfiguration.WORKING_EXCHANGE, RabbitConfiguration.WORKING_DEMO_ROUTINGKEY,

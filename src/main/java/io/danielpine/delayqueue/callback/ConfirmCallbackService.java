@@ -18,17 +18,13 @@ public class ConfirmCallbackService implements RabbitTemplate.ConfirmCallback {
 
 
     @PostConstruct
-    public void init(){
+    public void init() {
         rabbitTemplate.setConfirmCallback(this);            //指定 ConfirmCallback
     }
 
 
     @Override
     public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-        if (!ack) {
-            log.error("消息发送异常!");
-        } else {
-            log.info("发送者爸爸已经收到确认，correlationData={} ,ack={}, cause={}", correlationData.getId(), ack, cause);
-        }
+        log.error("消息发送{} correlationData={} ,ack={}, cause={}", ack ? "成功" : "异常", correlationData.getId(), ack, cause);
     }
 }

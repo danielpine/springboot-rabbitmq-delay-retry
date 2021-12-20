@@ -36,8 +36,7 @@ public class RabbitConfiguration {
      */
     @Bean
     public DirectExchange workingExchange() {
-        DirectExchange directExchange = new DirectExchange(WORKING_EXCHANGE, true, false);
-        return directExchange;
+        return new DirectExchange(WORKING_EXCHANGE, true, false);
     }
 
     /**
@@ -58,8 +57,6 @@ public class RabbitConfiguration {
 
     /**
      * 交换机与routekey绑定
-     *
-     * @return
      */
     @Bean
     public Binding workingDemoBinding() {
@@ -67,7 +64,6 @@ public class RabbitConfiguration {
                 .with(WORKING_DEMO_ROUTINGKEY);
     }
 
-    //
     /**
      * 延时队列 交换机配置标识符(固定)
      */
@@ -105,8 +101,7 @@ public class RabbitConfiguration {
      */
     @Bean
     public DirectExchange workingRetryExchange() {
-        DirectExchange directExchange = new DirectExchange(WORKING_RETRY_EXCHANGE_NAME, true, false);
-        return directExchange;
+        return new DirectExchange(WORKING_RETRY_EXCHANGE_NAME, true, false);
     }
 
     /**
@@ -127,13 +122,10 @@ public class RabbitConfiguration {
 
     /**
      * 绑定以上定义关系
-     *
-     * @return
      */
     @Bean
     public Binding retryDirectBinding() {
-        return BindingBuilder.bind(workingDemoRetryQueue()).to(workingRetryExchange())
-                .with(WORKING_DEMO_RETRY_ROUTING_KEY);
+        return BindingBuilder.bind(workingDemoRetryQueue()).to(workingRetryExchange()).with(WORKING_DEMO_RETRY_ROUTING_KEY);
     }
 
     /**
@@ -166,8 +158,7 @@ public class RabbitConfiguration {
      */
     @Bean
     public DirectExchange deadExchange() {
-        DirectExchange directExchange = new DirectExchange(FAIL_EXCHANGE_NAME, true, false);
-        return directExchange;
+        return new DirectExchange(FAIL_EXCHANGE_NAME, true, false);
     }
 
     /**
@@ -186,12 +177,10 @@ public class RabbitConfiguration {
             @Override
             public Message postProcessMessage(Message message, Correlation correlation) {
                 MessageProperties messageProperties = message.getMessageProperties();
-
                 if (correlation instanceof CorrelationData) {
                     String correlationId = ((CorrelationData) correlation).getId();
                     messageProperties.setCorrelationId(correlationId);
                 }
-                // 可以设置持久化，但与本文无关，因此没有附上
                 return message;
             }
 

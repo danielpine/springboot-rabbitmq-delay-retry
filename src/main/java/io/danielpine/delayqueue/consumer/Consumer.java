@@ -26,7 +26,7 @@ public class Consumer {
     @Resource
     MessagePostProcessor correlationIdProcessor;
 
-    @RabbitListener(queues = "working_demo_queue")
+    @RabbitListener(queues = RabbitConfiguration.WORKING_DEMO_QUEUE)
     protected void consumer(Message message, Channel channel) {
         String correlationId = message.getMessageProperties().getCorrelationId();
         try {

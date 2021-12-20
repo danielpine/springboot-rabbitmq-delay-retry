@@ -27,23 +27,27 @@ public class Consumer {
     MessagePostProcessor correlationIdProcessor;
 
     @RabbitListener(queues = "working_demo_queue")
-    protected void consumer(Message message, Channel channel) throws Exception {
+    protected void consumer(Message message, Channel channel) {
         String correlationId = message.getMessageProperties().getCorrelationId();
         try {
             logger.info("================================");
-            logger.info("处理消息:" + correlationId);
-            int i = 1 / 0;
+            logger.info("开始处理消息:" + correlationId);
+            String number = new String(message.getBody());
+            long result = System.currentTimeMillis() / Integer.parseInt(number);
             channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            logger.info("处理消息结果:" + result);
+            logger.info("处理消息成功:" + correlationId);
         } catch (Exception e) {
             String correlationData = (String) message.getMessageProperties().getHeaders().get("spring_returned_message_correlation");
-            logger.error("处理失败:" + e.getMessage() + ",原始消息:" + new String(message.getBody()) + " correlationData:" + correlationData);
+            logger.error("处理消息失败:[" + e.getMessage() + "],原始消息:[" + new String(message.getBody()) + "] correlationId:" + correlationData);
             long retryCount = getRetryCount(message.getMessageProperties());
-            // 重试次数超过3次,则将消息发送到失败队列等待特定消费者处理或者人工处理
             try {
                 if (retryCount <= 3) {
-                    logger.info("开始NACK... tag:" + message.getMessageProperties().getDeliveryTag() + " retryCount:" + retryCount);
+                    // 重试次数小于3次,NACK REQUEUE FALSE 转到延时重试队列，超时后重新回到工作队列
+                    logger.info("开始NACK消息 tag:" + message.getMessageProperties().getDeliveryTag() + " retryCount:" + retryCount);
                     channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
                 } else {
+                    // 重试次数超过3次,则将消息发送到失败队列等待特定消费者处理或者人工处理
                     channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
                     rabbitTemplate.convertAndSend(RabbitConfiguration.FAIL_EXCHANGE_NAME, RabbitConfiguration.FAIL_ROUTING_KEY,
                             message, correlationIdProcessor, new CorrelationData(correlationData));
@@ -51,7 +55,7 @@ public class Consumer {
                 }
             } catch (Exception ee) {
                 // TODO 文件或数据库兜底方案
-                logger.error("发送死信队列报错:" + ee.getMessage() + ",原始消息:" + new String(message.getBody()), ee);
+                logger.error("发送死信异常:" + ee.getMessage() + ",原始消息:" + new String(message.getBody()), ee);
             }
         }
     }

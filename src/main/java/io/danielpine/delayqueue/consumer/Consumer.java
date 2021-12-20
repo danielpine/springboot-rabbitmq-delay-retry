@@ -18,9 +18,7 @@ import java.util.Map;
 
 @Component
 public class Consumer {
-
-    private final static Logger logger = LoggerFactory.getLogger(Consumer.class);
-
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     @Resource
     private RabbitTemplate rabbitTemplate;
     @Resource
@@ -28,29 +26,34 @@ public class Consumer {
 
     @RabbitListener(queues = RabbitConfiguration.WORKING_DEMO_QUEUE)
     protected void consumer(Message message, Channel channel) {
-        String correlationId = message.getMessageProperties().getCorrelationId();
+        MessageProperties messageProperties = message.getMessageProperties();
+        String correlationId = messageProperties.getCorrelationId();
         try {
             logger.info("================================");
             logger.info("开始处理消息:" + correlationId);
-            String number = new String(message.getBody());
-            long result = System.currentTimeMillis() / Integer.parseInt(number);
-            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            long result = System.currentTimeMillis() / Integer.parseInt(new String(message.getBody()));
+            channel.basicAck(messageProperties.getDeliveryTag(), false);
             logger.info("处理消息结果:" + result);
             logger.info("处理消息成功:" + correlationId);
         } catch (Exception e) {
-            String correlationData = (String) message.getMessageProperties().getHeaders().get("spring_returned_message_correlation");
+            String correlationData = (String) messageProperties.getHeaders().get("spring_returned_message_correlation");
             logger.error("处理消息失败:[" + e.getMessage() + "],原始消息:[" + new String(message.getBody()) + "] correlationId:" + correlationData);
-            long retryCount = getRetryCount(message.getMessageProperties());
+            long retryCount = getRetryCount(messageProperties);
             try {
                 if (retryCount <= 3) {
                     // 重试次数小于3次,NACK REQUEUE FALSE 转到延时重试队列，超时后重新回到工作队列
-                    logger.info("开始NACK消息 tag:" + message.getMessageProperties().getDeliveryTag() + " retryCount:" + retryCount);
-                    channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
+                    logger.info("开始NACK消息 tag:" + messageProperties.getDeliveryTag() + " retryCount:" + retryCount);
+                    channel.basicNack(messageProperties.getDeliveryTag(), false, false);
                 } else {
                     // 重试次数超过3次,则将消息发送到失败队列等待特定消费者处理或者人工处理
-                    channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-                    rabbitTemplate.convertAndSend(RabbitConfiguration.FAIL_EXCHANGE_NAME, RabbitConfiguration.FAIL_ROUTING_KEY,
-                            message, correlationIdProcessor, new CorrelationData(correlationData));
+                    channel.basicAck(messageProperties.getDeliveryTag(), false);
+                    rabbitTemplate.convertAndSend(
+                            RabbitConfiguration.FAIL_EXCHANGE_NAME,
+                            RabbitConfiguration.FAIL_ROUTING_KEY,
+                            message,
+                            correlationIdProcessor,
+                            new CorrelationData(correlationData)
+                    );
                     logger.info("连续失败三次，将消息发送到死信队列,发送消息:" + new String(message.getBody()));
                 }
             } catch (Exception ee) {
@@ -65,14 +68,12 @@ public class Consumer {
      * 获取消息被重试的次数
      */
     public long getRetryCount(MessageProperties messageProperties) {
-        Long retryCount = 0L;
         if (null != messageProperties) {
             List<Map<String, ?>> deaths = messageProperties.getXDeathHeader();
             if (deaths != null && deaths.size() > 0) {
-                Map<String, Object> death = (Map<String, Object>) deaths.get(0);
-                retryCount = (Long) death.get("count");
+                return (Long) deaths.get(0).get("count");
             }
         }
-        return retryCount;
+        return 0L;
     }
 }

@@ -115,7 +115,7 @@ public class RabbitConfiguration {
         // 将消息重新投递到业务交换机Exchange中
         args.put(RETRY_LETTER_QUEUE_KEY, WORKING_EXCHANGE);
         args.put(RETRY_LETTER_ROUTING_KEY, WORKING_DEMO_ROUTINGKEY);
-        // 消息在队列中延迟3s后超时，消息会重新投递到x-dead-letter-exchage对应的队列中，routingkey为自己指定
+        // 消息在队列中延迟3s后超时，消息会重新投递到x-dead-letter-exchange对应的队列中，routingkey为自己指定
         args.put(RETRY_MESSAGE_TTL, 3 * 1000);
         return new Queue(WORKING_DEMO_RETRY_QUEUE_NAME, true, false, false, args);
     }

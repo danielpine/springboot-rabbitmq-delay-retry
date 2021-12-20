@@ -25,6 +25,6 @@ public class ConfirmCallbackService implements RabbitTemplate.ConfirmCallback {
 
     @Override
     public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-        log.error("消息发送{} correlationData={} ,ack={}, cause={}", ack ? "成功" : "异常", correlationData.getId(), ack, cause);
+        log.info("消息发送{} correlationData={} ,ack={}, cause={}", ack ? "成功" : "异常", correlationData.getId(), ack, cause);
     }
 }

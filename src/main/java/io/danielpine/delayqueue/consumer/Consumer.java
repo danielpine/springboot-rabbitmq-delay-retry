@@ -37,6 +37,7 @@ public class Consumer {
             logger.info("处理消息成功:" + correlationId);
         } catch (Exception e) {
             String correlationData = (String) messageProperties.getHeaders().get("spring_returned_message_correlation");
+            message.getMessageProperties().setHeader("x-last-fail-reason", "Exception:[" + e.getMessage() + "]");
             logger.error("处理消息失败:[" + e.getMessage() + "],原始消息:[" + new String(message.getBody()) + "] correlationId:" + correlationData);
             long retryCount = getRetryCount(messageProperties);
             try {
